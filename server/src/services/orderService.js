@@ -2,6 +2,7 @@
 
 const crypto = require('node:crypto');
 const cartService = require('./cartService');
+const trackingService = require('./trackingService');
 
 const orders = new Map();
 
@@ -58,6 +59,7 @@ function createOrder(sessionId, payload) {
   };
 
   orders.set(order.id, order);
+  trackingService.createTimeline(order.id);
   cartService.clearCart(sessionId);
   return order;
 }
