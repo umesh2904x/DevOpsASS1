@@ -6,6 +6,7 @@ const express = require('express');
 const { getAllProducts, getProductById, getCategories } = require('./data/products');
 const cartService = require('./services/cartService');
 const orderService = require('./services/orderService');
+const trackingService = require('./services/trackingService');
 
 const SESSION_HEADER = 'x-session-id';
 
@@ -78,6 +79,22 @@ function app() {
     const order = orderService.getOrder(req.params.id);
     if (!order) return res.status(404).json({ error: 'ORDER_NOT_FOUND', message: 'No such order' });
     res.json(order);
+  });
+
+  api.get('/api/orders/:id/tracking', (req, res) => {
+    const timeline = trackingService.getTimeline(req.params.id);
+    if (!timeline) return res.status(404).json({ error: 'TRACKING_NOT_FOUND', message: 'No tracking for this order' });
+    res.json(timeline);
+  });
+
+  api.post('/api/orders/:id/tracking', (req, res, next) => {
+    try {
+      const timeline = trackingService.advanceStatus(req.params.id, (req.body || {}).status);
+      if (!timeline) return res.status(404).json({ error: 'TRACKING_NOT_FOUND', message: 'No tracking for this order' });
+      res.json(timeline);
+    } catch (err) {
+      next(err);
+    }
   });
 
   api.use((req, res) => res.status(404).json({ error: 'NOT_FOUND', message: 'Route not found' }));
