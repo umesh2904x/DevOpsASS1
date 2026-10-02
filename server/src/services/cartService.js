@@ -97,7 +97,7 @@ function summarise(cart) {
   });
 
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
-  const shipping = subtotal === 0 || subtotal >= 999 ? 0 : 79;
+  const shipping = subtotal === 0 || subtotal >= 999 ? 0 : 49;
   const tax = Math.round(subtotal * 0.05);
   const total = subtotal + shipping + tax;
 
