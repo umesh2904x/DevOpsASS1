@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ShopVerse &mdash; E-Commerce Storefront</title>
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+<header>
+  <h1>&#128722; ShopVerse</h1>
+  <p class="tag">Assignment 1 &mdash; E-Commerce Storefront</p>
+  <button id="cart-btn">Cart (<span id="cart-count">0</span>)</button>
+</header>
+
+<main>
+  <section class="filters">
+    <input id="search" type="search" placeholder="Search products&hellip;" />
+    <select id="category"><option value="">All categories</option></select>
+  </section>
+
+  <section id="products" class="grid">Loading&hellip;</section>
+
+  <aside id="cart-panel" class="panel hidden">
+    <h2>Your Cart</h2>
+    <div id="cart-items"></div>
+    <div id="cart-total"></div>
+    <button id="checkout">Checkout (COD)</button>
+    <button id="close-cart" class="ghost">Close</button>
+  </aside>
+</main>
+
+<footer>ShopVerse &middot; built with Node.js + Express &middot; Deployed by GitHub Actions</footer>
+<script src="/js/app.js"></script>
+</body>
+</html>
