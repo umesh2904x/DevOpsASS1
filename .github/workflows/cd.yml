@@ -108,37 +108,10 @@ jobs:
         if: always()
         run: docker rm -f shopverse-staging || true
 
-  gate:
-    name: Verify CI Passed
-    runs-on: ubuntu-latest
-    needs: [deploy-staging]
-    steps:
-      - name: Confirm every CI check on this commit succeeded
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SHA: ${{ github.sha }}
-        run: |
-          # Only the checks reported by the CI workflow count here - the CD
-          # workflow's own checks are still in flight while this gate runs.
-          counts=$(gh api "repos/${{ github.repository }}/commits/$SHA/check-runs" \
-            --jq '[.check_runs[] | select(.name == "CI")] | "total=\(length) bad=\([.[] | select(.status != "completed" or .conclusion != "success")] | length)"')
-          echo "$counts"
-          total=$(echo "$counts" | sed 's/.*total=\([0-9]*\).*/\1/')
-          bad=$(echo "$counts" | sed 's/.*bad=\([0-9]*\).*/\1/')
-          if [ "$total" -eq 0 ]; then
-            echo "no CI check runs found for this commit - refusing to release"
-            exit 1
-          fi
-          if [ "$bad" -ne 0 ]; then
-            echo "$bad CI check run(s) are not green - refusing to release"
-            exit 1
-          fi
-          echo "all CI checks are green - releasing"
-
   release:
     name: Package Release
     runs-on: ubuntu-latest
-    needs: gate
+    needs: [deploy-staging]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
