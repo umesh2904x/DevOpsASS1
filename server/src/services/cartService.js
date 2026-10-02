@@ -3,6 +3,8 @@
 const { getProductById } = require('../data/products');
 
 const MAX_QTY_PER_LINE = 10;
+const FREE_SHIPPING_THRESHOLD = 999;
+const BASE_SHIPPING_CHARGE = 79;
 
 /** Per-session cart kept in memory. sessionId -> { items: [] } */
 const carts = new Map();
@@ -97,7 +99,7 @@ function summarise(cart) {
   });
 
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
-  const shipping = subtotal === 0 || subtotal >= 999 ? 0 : 79;
+  const shipping = subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : BASE_SHIPPING_CHARGE;
   const tax = Math.round(subtotal * 0.05);
   const total = subtotal + shipping + tax;
 
