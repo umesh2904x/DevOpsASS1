@@ -8,6 +8,8 @@ on:
 permissions:
   contents: write
   packages: write
+  checks: read
+  actions: read
 
 concurrency:
   group: cd-production
@@ -18,18 +20,33 @@ jobs:
   verify:
     name: Verify CI status
     runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.gate.outputs.ready }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Confirm all CI checks passed on this commit
+      - name: Confirm the CI run for this commit succeeded
+        id: gate
         uses: actions/github-script@v7
         with:
+          result-encoding: string
           script: |
             const sha = context.sha;
             const { data } = await github.rest.checks.listForRef({ ref: sha });
-            const ci = data.check_runs.filter(c => c.name === 'CI');
-            if (!ci.length) core.setFailed('No CI run found for this commit');
-            const failed = ci.filter(c => c.conclusion !== 'success');
-            if (failed.length) core.setFailed(`CI checks not green: ${failed.map(c => c.name).join(', ')}`);
+            const ci = data.check_runs.filter((c) => c.name === 'CI');
+            if (ci.length === 0) {
+              core.setFailed('No CI check run found for this commit - refusing to deploy');
+              return;
+            }
+            const pending = ci.filter((c) => c.status !== 'completed');
+            if (pending.length) {
+              core.setFailed(`CI still running: ${pending.map((c) => c.name).join(', ')}`);
+              return;
+            }
+            const failed = ci.filter((c) => c.conclusion !== 'success');
+            if (failed.length) {
+              core.setFailed(`CI checks not green: ${failed.map((c) => c.name).join(', ')}`);
+              return;
+            }
+            core.setOutput('ready', 'true');
             core.info(`All ${ci.length} CI checks are green for ${sha}`);
 
   # ---------- build image and verify it runs ----------
