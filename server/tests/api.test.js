@@ -113,3 +113,33 @@ test('rejects order on empty cart', async () => {
 test('unknown route returns 404', async () => {
   await api().get('/api/does-not-exist').expect(404);
 });
+
+test('creates a tracking timeline when an order is placed', async () => {
+  await api().post('/api/cart/items').set(SID, 't1').send({ productId: 'P-1005', qty: 1 }).expect(201);
+  const placed = await api()
+    .post('/api/orders')
+    .set(SID, 't1')
+    .send({ customer: { name: 'Rahul', email: 'rahul@example.com', address: 'Mumbai' }, paymentMethod: 'COD' })
+    .expect(201);
+
+  const res = await api().get(`/api/orders/${placed.body.id}/tracking`).expect(200);
+  assert.strictEqual(res.body.events[0].status, 'PLACED');
+  assert.match(res.body.trackingNumber, /^SVE/);
+});
+
+test('advances shipment status and refuses to move backwards', async () => {
+  await api().post('/api/cart/items').set(SID, 't2').send({ productId: 'P-1005', qty: 1 }).expect(201);
+  const placed = await api()
+    .post('/api/orders')
+    .set(SID, 't2')
+    .send({ customer: { name: 'Rahul', email: 'rahul@example.com', address: 'Mumbai' }, paymentMethod: 'COD' })
+    .expect(201);
+
+  await api().post(`/api/orders/${placed.body.id}/tracking`).set(SID, 't2').send({ status: 'SHIPPED' }).expect(200);
+
+  const back = await api().post(`/api/orders/${placed.body.id}/tracking`).set(SID, 't2').send({ status: 'PACKED' }).expect(409);
+  assert.strictEqual(back.body.error, 'INVALID_STATUS_TRANSITION');
+
+  const unknown = await api().post(`/api/orders/${placed.body.id}/tracking`).set(SID, 't2').send({ status: 'TELEPORTED' }).expect(400);
+  assert.strictEqual(unknown.body.error, 'INVALID_STATUS');
+});
