@@ -15,7 +15,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
+  # Must be lowercase: Docker image references reject uppercase characters.
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/devopsass1
 
 jobs:
   build-image:
@@ -36,7 +37,8 @@ jobs:
           tags: |
             type=ref,event=branch
             type=sha,format=short
-            type=semver,pattern={{version}}
+            type=raw,value=staging
+            type=raw,value=latest,enable={{is_default_branch}}
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -51,19 +53,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-image
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ${{ env.IMAGE_NAME }}:staging
-          cache-from: type=gha
+      - name: Pull the image published by the previous job
+        run: docker pull $IMAGE_NAME:staging
       - name: Run the container and probe it
         run: |
           docker run -d --name shopverse -p 3000:3000 $IMAGE_NAME:staging
